@@ -40,5 +40,5 @@ for i in range(len(roidb)):
 print('min_cls:{0}, max_cls:{1}'.format(min_cls, max_cls))
 
 	
-pretrained_model = '/media/hp/189EA2629EA23860/work/visual_relation/vtranse/tf-faster-rcnn-master/lib/output/vgg16/coco_2014_train+coco_2014_valminusminival/vgg16_faster_rcnn_iter_1190000.ckpt'
+pretrained_model = '/media/hp/189EA2629EA23860/work/visual_relation/MFURLN/tf-faster-rcnn-master/lib/output/vgg16/coco_2014_train+coco_2014_valminusminival/vgg16_faster_rcnn_iter_1190000.ckpt'
 train_net(net, vg_imdb, roidb, valroidb,  output_dir, tb_dir, max_iters = 50001, pretrained_model = pretrained_model)

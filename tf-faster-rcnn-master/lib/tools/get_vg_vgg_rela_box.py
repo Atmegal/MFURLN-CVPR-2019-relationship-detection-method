@@ -12,8 +12,8 @@ import sys
 import tensorflow as tf
 from nets.vgg16 import vgg16
 
-output_dir = '/media/zhan/189EA2629EA23860/work/visual_relation/vtranse/tf-faster-rcnn-master/lib/dete_pred_vg.npz'
-save_path = '/media/zhan/189EA2629EA23860/work/visual_relation/vtranse/tf-faster-rcnn-master/lib/vg_detected_box.npz'
+output_dir = '/media/zhan/189EA2629EA23860/work/visual_relation/MFURLN/tf-faster-rcnn-master/lib/dete_pred_vg.npz'
+save_path = '/media/zhan/189EA2629EA23860/work/visual_relation/MFURLN/tf-faster-rcnn-master/lib/vg_detected_box.npz'
 model_path = '/media/zhan/189EA2629EA23860/vrd-master/tf-faster-rcnn-master/lib/output/vgg16/vg/vgg16_faster_rcnn_iter_1050000.ckpt'
 
 num_classes = 201

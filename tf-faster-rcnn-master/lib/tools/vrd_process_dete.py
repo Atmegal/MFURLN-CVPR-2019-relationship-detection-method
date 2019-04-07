@@ -12,7 +12,7 @@ file_path = [train_file_path, test_file_path]
 train_image_path = DIR + 'dataset/VRD/sg_dataset/sg_train_images/'
 test_image_path = DIR + 'dataset/VRD/sg_dataset/sg_test_images/'
 image_path = [train_image_path, test_image_path]
-save_path ='/home/hp/work/visual relation/Relation/vtranse/tf-faster-rcnn-master/lib/tools'
+save_path ='/home/hp/work/visual relation/Relation/MFURLN/tf-faster-rcnn-master/lib/tools'
 
 
 
