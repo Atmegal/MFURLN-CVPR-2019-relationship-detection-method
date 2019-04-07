@@ -1,0 +1,2 @@
+model_checkpoint_path: "vrd_roid_predicate.ckpt"
+all_model_checkpoint_paths: "vrd_roid_predicate.ckpt"
