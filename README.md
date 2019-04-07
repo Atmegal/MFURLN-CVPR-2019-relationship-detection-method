@@ -7,3 +7,7 @@ The codes includes three parts: codes of Faster R-CNN for object detection, code
 We will provide the Pytorch codes as soon as possible. 
 
 The end-to-end version of codes will be released in our future work.
+
+We have provided the predicate files for VRD. We will upload the rela files for VRD in a few days.
+
+We will write a readme file for using this code.
