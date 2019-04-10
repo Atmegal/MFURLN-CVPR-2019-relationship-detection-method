@@ -8,6 +8,8 @@ We will provide the Pytorch codes as soon as possible.
 
 The end-to-end version of codes will be released in our future work.
 
-We have provided the predicate files for VRD. We will upload the rela files for VRD in a few days.
+We have provided the predicate and the rela files for VRD.
+
+We are still missing some datasets and .ckpt files, since they are too huge to upload. 
 
 We will write a readme file for using this code.
