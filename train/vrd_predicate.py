@@ -20,9 +20,10 @@ vnet = MFURLN()
 vnet.create_graph(N_each_batch, index_sp, index_cls, N_cls, N_rela)
 
 roidb_path = './input/vrd_roidb_predicate.npz'
+#roidb_path = '/media/hp/189EA2629EA23860/work/visual_relation/vtranse/input/vrd_roidb_sig.npz'
 res_path =  './tf-faster-rcnn-master/lib/output/VRD/vgg16_faster_rcnn_iter_60000.ckpt'
-model_path = './result/vrd/vrd_roid_predicate.ckpt'
-test_path = './result/vrd/vrd_roid_predicate.npz'
+model_path = './result/vrd/predicate/vrd_roid_predicate.ckpt'
+test_path = './result/vrd/predicate/vrd_roid_predicate.npz'
 
 
 roidb_read = read_roidb(roidb_path)

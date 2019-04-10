@@ -34,7 +34,7 @@ class MFURLN(object):
 
 ##################################################
 		self.sp_info = tf.placeholder(tf.float32, shape=[None, 8])
-		self.sub_obj_p = tf.placeholder(tf.float32, shape=[None, num_predicates - 1])
+		self.sub_obj_p = tf.placeholder(tf.float32, shape=[None, num_predicates])
 		self.rela_label = tf.placeholder(tf.float32, shape=[None,num_predicates])
 
 ##############################################################
@@ -45,9 +45,9 @@ class MFURLN(object):
 
 		self.keep_prob = tf.placeholder(tf.float32)
 
-		self.object = np.load('/media/hp/189EA2629EA23860/work/NLP/oList_word_embedding.npy')
-		self.robject = np.load('/media/hp/189EA2629EA23860/work/NLP/rList_word_embedding.npy')
-		conf = np.load('/media/hp/189EA2629EA23860/work/visual_relation/vtranse_new/fuse_res/inter.npz')
+		self.object = np.load('./input/VRD/oList_word_embedding.npy')
+		self.robject = np.load('./input/VRD/rList_word_embedding.npy')
+		conf = np.load('./input/VRD/language_inter.npz')
 		self.sub_obj_pred = conf['sub_obj']
 		self.sub_pred = conf['sub']
 		self.obj_pred = conf['obj']
@@ -89,9 +89,9 @@ class MFURLN(object):
 		self.layers['sub_pool5'] = sub_pool5
 		self.layers['ob_pool5'] = ob_pool5
 		self.layers['v_pool5'] = v_pool5
-		self.layers['sub_fc7'] = tf.concat([sub_fc7], 1)
-		self.layers['ob_fc7'] = tf.concat([ob_fc7], 1)
-		self.layers['v_fc7'] = tf.concat([v_fc7], 1)
+		self.layers['sub_fc7'] = sub_fc7
+		self.layers['ob_fc7'] = ob_fc7
+		self.layers['v_fc7'] = v_fc7
 
 	def image_to_head(self, is_training, reuse=False):
 		with tf.variable_scope(self.scope, self.scope, reuse=reuse):
@@ -166,7 +166,7 @@ class MFURLN(object):
      		ob_fc = self.layers['ob_fc7']
 
 
- 		sp_info = tf.concat([ self.sp_info ], axis = 1)
+ 		sp_info = self.sp_info
 
 		sub_fc = slim.fully_connected(sub_fc, cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_s1')			 
@@ -243,7 +243,7 @@ class MFURLN(object):
 		RD_loss = 0.0
 		acc = 0.0
 
-		blob = get_blob_pred(roidb_use, im_scale, w, h, self.index_sp, self.N_each_batch)
+		blob = get_blob_pred(roidb_use, im_scale, self.N_each_batch)
 
 		#pdb.set_trace()
 		feed_dict = {self.image: im,
@@ -254,7 +254,7 @@ class MFURLN(object):
 					self.rela_label: blob['rela'],
 					self.sub_cls: blob['sub_gt'] ,
 					self.obj_cls: blob['obj_gt'] , 
-					self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']], 
+					self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
 						self.sp_info: blob['sp_info'],
 						}
 
@@ -268,7 +268,7 @@ class MFURLN(object):
 		im, im_scale, w, h = im_preprocess(roidb_use['image'])
 		N_rela = len(roidb_use['rela_gt'])
 
-		blob = get_blob_pred(roidb_use, im_scale, w, h, self.index_sp, self.N_each_batch)
+		blob = get_blob_pred(roidb_use, im_scale, self.N_each_batch)
 		is_train = False
 		feed_dict = {self.image: im, 
 				self.keep_prob: 1,
@@ -278,7 +278,7 @@ class MFURLN(object):
 					self.sub_cls: blob['sub_gt'] ,
 					self.obj_cls: blob['obj_gt'] , 
 						self.sp_info: blob['sp_info'],
-						self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']], 
+						self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
 						}
 		predictions = sess.run(self.predictions, feed_dict = feed_dict)		
 		pred_rela = predictions['rela_pred']

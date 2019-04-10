@@ -36,7 +36,7 @@ __C.VG_IOU_TEST = 0.5
 ############################
 __C.VRD_BATCH_NUM = 30
 __C.VRD_NUM_CLASS = 101
-__C.VRD_NUM_RELA = 71
+__C.VRD_NUM_RELA = 70
 __C.VRD_LR_INIT = 0.00001
 __C.VRD_TRAIN_ROUND = 20
 

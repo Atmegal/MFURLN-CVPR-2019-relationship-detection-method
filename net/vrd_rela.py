@@ -34,8 +34,8 @@ class MFURLN(object):
 
 ##################################################
 		self.sp_info = tf.placeholder(tf.float32, shape=[None, 8])
-
-		self.rela_label = tf.placeholder(tf.int32, shape=[None,num_predicates])
+		self.sub_obj_p = tf.placeholder(tf.float32, shape=[None, num_predicates])
+		self.rela_label = tf.placeholder(tf.float32, shape=[None, num_predicates + 1])
 
 ##############################################################
 
@@ -45,9 +45,9 @@ class MFURLN(object):
 
 		self.keep_prob = tf.placeholder(tf.float32)
 
-		self.object = np.load('/media/hp/189EA2629EA23860/work/NLP/oList_word_embedding.npy')
-		self.robject = np.load('/media/hp/189EA2629EA23860/work/NLP/rList_word_embedding.npy')
-		conf = np.load('/media/hp/189EA2629EA23860/work/visual_relation/vtranse_new/fuse_res/inter.npz')
+		self.object = np.load('./input/VRD/oList_word_embedding.npy')
+		self.robject = np.load('./input/VRD/rList_word_embedding.npy')
+		conf = np.load('./input/VRD/language_inter.npz')
 		self.sub_obj_pred = conf['sub_obj']
 		self.sub_pred = conf['sub']
 		self.obj_pred = conf['obj']
@@ -89,9 +89,9 @@ class MFURLN(object):
 		self.layers['sub_pool5'] = sub_pool5
 		self.layers['ob_pool5'] = ob_pool5
 		self.layers['v_pool5'] = v_pool5
-		self.layers['sub_fc7'] = tf.concat([sub_fc7], 1)
-		self.layers['ob_fc7'] = tf.concat([ob_fc7], 1)
-		self.layers['v_fc7'] = tf.concat([v_fc7], 1)
+		self.layers['sub_fc7'] = sub_fc7
+		self.layers['ob_fc7'] = ob_fc7
+		self.layers['v_fc7'] = v_fc7
 
 	def image_to_head(self, is_training, reuse=False):
 		with tf.variable_scope(self.scope, self.scope, reuse=reuse):
@@ -166,7 +166,7 @@ class MFURLN(object):
      		ob_fc = self.layers['ob_fc7']
 
 
- 		sp_info = tf.concat([ self.sp_info ], axis = 1)
+ 		sp_info = self.sp_info
 
 		sub_fc = slim.fully_connected(sub_fc, cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_s1')			 
@@ -178,13 +178,15 @@ class MFURLN(object):
 										 activation_fn=tf.nn.relu, scope='RD_p1')
 
 		vector_dic = tf.Variable(self.object, trainable=False, name='VD_vo')
-		sub_onehot = tf.matmul(tf.one_hot(self.sub_cls-1, self.num_classes-1), vector_dic)
-		obj_onehot = tf.matmul(tf.one_hot(self.obj_cls-1, self.num_classes-1), vector_dic)
+		sub_onehot = tf.matmul(tf.one_hot(self.sub_cls, self.num_classes-1), vector_dic)
+		obj_onehot = tf.matmul(tf.one_hot(self.obj_cls, self.num_classes-1), vector_dic)
 
 		label_s = slim.fully_connected(sub_onehot, cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_ls1')
 		label_o = slim.fully_connected(obj_onehot , cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_lo1')
+		sub_obj_p = slim.fully_connected(self.sub_obj_p, cfg.VTR.VG_R, 
+										 activation_fn=tf.nn.relu, scope='RD_li1', reuse = False)
 
 		v_f1 =  slim.fully_connected( tf.concat([sub_fc, ob_fc, v_fc], axis = 1), cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_1v', reuse = False)
@@ -192,7 +194,7 @@ class MFURLN(object):
 		v_f2 =  slim.fully_connected( tf.concat([sp_info], axis = 1), cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_2v', reuse = False)
 
-		v_f3 =  slim.fully_connected( tf.concat([label_s, label_o], axis = 1), cfg.VTR.VG_R,
+		v_f3 =  slim.fully_connected( tf.concat([label_s, label_o, sub_obj_p], axis = 1), cfg.VTR.VG_R,
 										 activation_fn=tf.nn.relu, scope='RD_3v', reuse = False)
 
 		rela_label = self.rela_label#tf.one_hot( self.rela_label, self.num_predicates)
@@ -200,32 +202,35 @@ class MFURLN(object):
 		full_fc = tf.concat([v_f1, v_f2, v_f3], 1)
 
 		full_fc_d = slim.fully_connected( full_fc, 100, 
-										 activation_fn=tf.nn.relu, scope='RD_full_d', reuse = reuse)
+										 activation_fn=tf.nn.relu, scope='RD_full_d', reuse = False)
 
 		rela_score_full_d = slim.fully_connected(full_fc_d, 1,  
-										 activation_fn=None, scope='RD_final_full_d', reuse = reuse)
+										 activation_fn=None, scope='RD_final_full_d', reuse = False)
 
 		full_fc_p = slim.fully_connected(tf.concat([full_fc, full_fc_d], axis = 1), cfg.VTR.VG_R, 
-										 activation_fn=tf.nn.relu, scope='RD_full_p', reuse = reuse)
-		rela_score_full = slim.fully_connected(full_fc_p, self.num_predicates-1,  
-										 activation_fn=None, scope='RD_final_full_p', reuse = reuse)
+										 activation_fn=tf.nn.relu, scope='RD_full_p', reuse = False)
+		rela_score_full = slim.fully_connected(full_fc_p, self.num_predicates,  
+										 activation_fn=None, scope='RD_final_full_p', reuse = False)
 
-		self.predictions['rela_pred_all'] = tf.concat([tf.nn.sigmoid(rela_score_full), tf.nn.sigmoid(rela_score_full_1)], axis = 1)
 
-		rela_label, rela_label_1 = tf.split(rela_label, [self.num_predicates-1, 1], 1)
+		self.predictions['rela_pred_all'] = tf.concat([tf.nn.sigmoid(rela_score_full), tf.nn.sigmoid(rela_score_full_d)], axis = 1)
+
+		rela_label, rela_label_1 = tf.split(rela_label, [self.num_predicates, 1], 1)
 
 		rela_label_3 = 1 - rela_label_1
 
 		r1 = tf.nn.sigmoid(rela_score_full)
 
 
-		in_de_loss = - tf.reduce_sum( rela_label_1 * tf.log(tf.clip_by_value( tf.nn.sigmoid(rela_score_full_1), 1e-8, 1.0))) - tf.reduce_sum( ( rela_label_3) * tf.log(tf.clip_by_value(1 - tf.nn.sigmoid(rela_score_full_1), 1e-8, 1.0)))
+		in_de_loss = - tf.reduce_sum( rela_label_1 * tf.log(tf.clip_by_value( tf.nn.sigmoid(rela_score_full_d), 1e-8, 1.0))) - tf.reduce_sum( ( rela_label_3) * tf.log(tf.clip_by_value(1 - tf.nn.sigmoid(rela_score_full_d), 1e-8, 1.0)))
 
 		rela_loss =  - tf.reduce_sum(  rela_label * tf.log(tf.clip_by_value(r1, 1e-8, 1.0))) - tf.reduce_sum( tf.reshape(tf.reduce_sum((1 - rela_label) * tf.log(tf.clip_by_value(1 - r1, 1e-8, 1.0)), 1), [-1, 1]) * rela_label_3) * 0.5
 
 
 		self.layers['rd_loss'] =  in_de_loss  + rela_loss
+
 		self.layers['rela_score_f'] = rela_score_full
+
 		self.layers['rela_score_is_pair'] = rela_score_full_d
 
 	def add_rd_loss(self):
@@ -242,46 +247,39 @@ class MFURLN(object):
 		rd_loss = tf.contrib.layers.apply_regularization(regularizer, weights_list=RD_var) + self.layers['rd_loss'] #* 100 
 	
 		self.losses['rd_loss'] = rd_loss
-		prediction = tf.one_hot(tf.argmax(rela_score, 1),  self.num_predicates)
-		correct_prediction = tf.not_equal(tf.argmax(tf.multiply(prediction, tf.cast(rela_label, tf.float32)), 1), False)
 
+		prediction = tf.one_hot(tf.argmax(rela_score, 1),  self.num_predicates+1)
+		correct_prediction = tf.not_equal(tf.argmax(tf.multiply(prediction, tf.cast(rela_label, tf.float32)), 1), False)
 		self.losses['acc'] = tf.reduce_mean( tf.cast(correct_prediction, tf.float32) )
 
-		rela_pred = tf.argmax(rela_score, 1)
-		self.predictions['rela_pred_train'] = rela_pred
 		rela_score = tf.nn.sigmoid(self.layers['rela_score_f']) 
-
 		rela_pred = tf.argmax(rela_score, 1)
 		self.predictions['rela_pred'] = rela_pred
 		rela_max_prob = tf.reduce_max(rela_score, 1)
 
 		r_0 = tf.nn.sigmoid(self.layers['rela_score_is_pair'])
-	
 		r_0 = 1 - tf.reshape(r_0, tf.shape(rela_max_prob))	
 
 		self.predictions['rela_max_prob'] = rela_max_prob * r_0 
 
 
 	def train_rela(self, sess, roidb_use, RD_train, N_t, t):
-		im, im_scale, w, h, im_visual, w1, h1 = im_preprocess(roidb_use['image'])
+		im, im_scale, w, h = im_preprocess(roidb_use['image'])
 		batch_size = self.N_each_batch
 		batch_num = np.min(len(roidb_use['right_index'])-1, 0)/batch_size
-		#N_each_batch
-		batch_num_w = np.min(len(roidb_use['wrong_index'])-1, 0)/(self.N_each_batch)
-		#batch_id_w = 0
+
 		RD_loss = 0.0
 		acc = 0.0
-		shuffle(roidb_use['right_index'])
-		shuffle(roidb_use['wrong_index'])
 		num = 0.
+
+		shuffle(roidb_use['right_index'])
 		for batch_id in range(np.int32(batch_num) + 1):
-                  
-			blob = get_blob_rela2(roidb_use, im_scale, w, h, self.index_sp, batch_size, batch_id, 0, N_t, w1, h1)
-			
+			blob = get_blob_rela(roidb_use, im_scale, batch_size, batch_id, N_t)
+		
 			if len(blob) == 0:
 				print(batch_id)
-				#pdb.set_trace()
 				continue
+
 			feed_dict = {self.image: im,
 				self.keep_prob: 0.5,
 				self.sbox: blob['sub_box'], 
@@ -290,14 +288,14 @@ class MFURLN(object):
 					self.rela_label: blob['rela'],
 					self.sub_cls: blob['sub_gt'],
 					self.obj_cls: blob['obj_gt'],
-						self.sp_info: blob['sp_info']
+						self.sp_info: blob['sp_info'],
+						self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
 						}	
 			_, losses = sess.run([RD_train,self.losses], feed_dict = feed_dict)
 			RD_loss += losses['rd_loss']
 			acc += losses['acc']
 			num += 1
-			if t% 1000 == 0:
-				print(losses['ls'] )
+
 
 		if num == 0:
 			return RD_loss, acc
@@ -307,47 +305,48 @@ class MFURLN(object):
 		return RD_loss, acc
 
 	def test_rela(self, sess, roidb_use):
-		im, im_scale , w, h, im_visual, w1, h1 = im_preprocess(roidb_use['image'])
+		im, im_scale , w, h = im_preprocess(roidb_use['image'])
+
 		batch_num = len(roidb_use['index_rela'])/self.N_each_batch
+		batch_size = self.N_each_batch
 		pred_rela = np.zeros([len(roidb_use['index_rela']),])
 		pred_rela_score = np.zeros([len(roidb_use['index_rela']),])
-		pred_rela_all = np.zeros([len(roidb_use['index_rela']),self.num_predicates * 1 ])
+		pred_rela_all = np.zeros([len(roidb_use['index_rela']),self.num_predicates + 1 ])
 		sub_rela = np.zeros([len(roidb_use['index_rela']),])
 		sub_score = np.zeros([len(roidb_use['index_rela']),])
 		obj_rela = np.zeros([len(roidb_use['index_rela']),])
-		obj_score = np.zeros([len(roidb_use['index_rela']),])		
+		obj_score = np.zeros([len(roidb_use['index_rela']),])
+		
 		for batch_id in range(np.int32(batch_num)):
-			blob = get_blob_rela1(roidb_use, im_scale, w, h, w1, h1, self.index_sp, self.N_each_batch, batch_id)
-			is_pair = np.array((blob['rela'] == 70 )+ 0)
+			blob = get_blob_rela_t(roidb_use, im_scale, batch_size, batch_id)
+
 			feed_dict = {self.image: im, 
 				self.keep_prob: 1,
 				self.sbox: blob['sub_box'], 
 				self.obox: blob['obj_box'], 
 				self.vbox: blob['vis_box'],
 					self.sub_cls: blob['sub_gt'],
-					self.obj_cls: blob['obj_gt']
-						self.sp_info: blob['sp_info']
+					self.obj_cls: blob['obj_gt'],
+						self.sp_info: blob['sp_info'],
+						self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
 						}
+
 			predictions = sess.run(self.predictions, feed_dict = feed_dict)
-			#w1 = sess.run(self.layers['w'], feed_dict = feed_dict)
+
 			pred_rela[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch] = predictions['rela_pred'][:]
-			sub_rela[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch] = predictions['sub_dete'][:]
-			obj_rela[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch] = predictions['obj_dete'][:]
-			sub_score[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch] = predictions['sub_score'][:]
-			obj_score[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch] = predictions['obj_score'][:]
 
 			pred_rela_score[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch] = predictions['rela_max_prob'][:]
+
 			pred_rela_all[batch_id*self.N_each_batch:(batch_id+1)*self.N_each_batch,:] = predictions['rela_pred_all'][:,:]
+
 		N_rela = len(roidb_use['rela_dete'])
 		pred_rela = pred_rela[0:N_rela]
 		pred_rela_score = pred_rela_score[0:N_rela]
 		pred_rela_all = pred_rela_all[0:N_rela,:]
-		sub_rela = sub_rela[0:N_rela]
-		obj_rela = obj_rela[0:N_rela]
-		sub_score = sub_score[0:N_rela]
-		obj_score = obj_score[0:N_rela]
 
-		return pred_rela, pred_rela_score, pred_rela_all, sub_rela, obj_rela, sub_score, obj_score
+
+		return pred_rela, pred_rela_score, pred_rela_all
+
 def conv(x, h, w, K, s_y, s_x, name, relu = True, reuse=False, padding='SAME'):
 	"""
 	Args:

@@ -141,7 +141,7 @@ def generate_phrase_min_box(sbox, obox):
 			phrase[i] = phrase[i] * 0
 	return phrase
 
-def get_blob_pred(roidb_use, im_scale, w, h, index_sp, N_each_batch):
+def get_blob_pred(roidb_use, im_scale, N_each_batch):
 	blob = {}
 	sub_box = roidb_use['sub_box_gt'] * im_scale
 	obj_box = roidb_use['obj_box_gt'] * im_scale
@@ -195,6 +195,123 @@ def get_blob_pred(roidb_use, im_scale, w, h, index_sp, N_each_batch):
 	blob['sp_info'] = np.hstack([sv1, sv2, sv3, sv4, ov1, ov2, ov3, ov4])
 
 	return blob
+def get_blob_rela(roidb_use, im_scale, N_each_batch, batch_id, N_t):
+	blob = {}
+	sub_box = np.array(roidb_use['sub_box_dete'])*im_scale
+	obj_box = np.array(roidb_use['obj_box_dete'])*im_scale
+	rela = np.int32(roidb_use['rela_dete'])
+
+	r = np.array(roidb_use['right_index'][batch_id*N_each_batch: (batch_id+1)*N_each_batch], dtype = np.int64)
+
+	shuffle(roidb_use['wrong_index'])
+	r2 = np.array(roidb_use['wrong_index'][:np.int(len(r)*N_t)], dtype = np.int64)
+
+		
+	if len(r2) == 0 and len(r) != 0:
+		index_use = r
+	elif len(r2) != 0 and len(r)==0:
+		index_use = r2
+	elif len(r2) == 0 and len(r)==0:
+		return blob
+	else:
+		index_use = np.concatenate([r, r2])
+
+	size = len(index_use)
+
+	sub_box_use = sub_box[index_use]
+	obj_box_use = obj_box[index_use]
+	rela_use = rela[index_use]
+
+	blob['sub_box'] = sub_box_use
+	blob['obj_box'] = obj_box_use
+
+
+	blob['rela'] = rela_use
+	blob['sub_gt'] = np.int32(np.array(roidb_use['sub_dete'])[index_use])-1
+	blob['obj_gt'] = np.int32(np.array(roidb_use['obj_dete'])[index_use])-1
+
+
+	sp1 = np.reshape(sub_box_use[:, 0] , [size,1])
+	sp2 = np.reshape(sub_box_use[:, 1] , [size,1])
+	sp3 = np.reshape(sub_box_use[:, 2] , [size,1])
+	sp4 = np.reshape(sub_box_use[:, 3] , [size,1])
+
+	op1 = np.reshape(obj_box_use[:, 0] , [size,1])
+	op2 = np.reshape(obj_box_use[:, 1] , [size,1])
+	op3 = np.reshape(obj_box_use[:, 2] , [size,1])
+	op4 = np.reshape(obj_box_use[:, 3] , [size,1])
+
+	v1 = np.reshape(np.min(np.hstack([op1, sp1]), 1), [size,1])
+	v2 = np.reshape(np.min(np.hstack([op2, sp2]), 1), [size,1])
+	v3 = np.reshape(np.max(np.hstack([op3, sp3]), 1), [size,1])
+	v4 = np.reshape(np.max(np.hstack([op4, sp4]), 1), [size,1])
+	vis_box = np.hstack([ v1, v2, v3, v4])
+	blob['vis_box'] = vis_box
+
+
+	sv1 = (sp1 - v1)/(v3-v1)
+	sv2 = (sp2 - v2)/(v4-v2)
+	sv3 = (sp3 - v1)/(v3-v1)
+	sv4 = (sp4 - v2)/(v4-v2)
+
+	ov1 = (op1 - v1)/(v3-v1)
+	ov2 = (op2 - v2)/(v4-v2)
+	ov3 = (op3 - v1)/(v3-v1)
+	ov4 = (op4 - v2)/(v4-v2)
+
+	blob['sp_info'] = np.hstack([sv1, sv2, sv3, sv4, ov1, ov2, ov3, ov4])
+
+ 	return blob
+
+def get_blob_rela_t(roidb_use, im_scale, N_each_batch, batch_id):
+	blob = {}
+	sub_box = np.array(roidb_use['sub_box_dete'])*im_scale
+	obj_box = np.array(roidb_use['obj_box_dete'])*im_scale
+	index = roidb_use['index_rela']
+
+	index_use = index[batch_id*N_each_batch: (batch_id+1)*N_each_batch]
+	size = len(index_use)
+	sub_box_use = sub_box[index_use]
+	obj_box_use = obj_box[index_use]
+
+	blob['sub_box'] = sub_box_use
+	blob['obj_box'] = obj_box_use
+
+	blob['sub_gt'] = np.int32(np.array(roidb_use['sub_dete'])[index_use])-1
+	blob['obj_gt'] = np.int32(np.array(roidb_use['obj_dete'])[index_use])-1
+
+
+	sp1 = np.reshape(sub_box_use[:, 0] , [size,1])
+	sp2 = np.reshape(sub_box_use[:, 1] , [size,1])
+	sp3 = np.reshape(sub_box_use[:, 2] , [size,1])
+	sp4 = np.reshape(sub_box_use[:, 3] , [size,1])
+
+	op1 = np.reshape(obj_box_use[:, 0] , [size,1])
+	op2 = np.reshape(obj_box_use[:, 1] , [size,1])
+	op3 = np.reshape(obj_box_use[:, 2] , [size,1])
+	op4 = np.reshape(obj_box_use[:, 3] , [size,1])
+
+	v1 = np.reshape(np.min(np.hstack([op1, sp1]), 1), [size,1])
+	v2 = np.reshape(np.min(np.hstack([op2, sp2]), 1), [size,1])
+	v3 = np.reshape(np.max(np.hstack([op3, sp3]), 1), [size,1])
+	v4 = np.reshape(np.max(np.hstack([op4, sp4]), 1), [size,1])
+	vis_box = np.hstack([ v1, v2, v3, v4])
+	blob['vis_box'] = vis_box
+
+
+	sv1 = (sp1 - v1)/(v3-v1)
+	sv2 = (sp2 - v2)/(v4-v2)
+	sv3 = (sp3 - v1)/(v3-v1)
+	sv4 = (sp4 - v2)/(v4-v2)
+
+	ov1 = (op1 - v1)/(v3-v1)
+	ov2 = (op2 - v2)/(v4-v2)
+	ov3 = (op3 - v1)/(v3-v1)
+	ov4 = (op4 - v2)/(v4-v2)
+
+	blob['sp_info'] = np.hstack([sv1, sv2, sv3, sv4, ov1, ov2, ov3, ov4])
+
+ 	return blob
 
 def pred_recall(test_roidb, pred_roidb, N_recall):
 	N_right = 0.0
@@ -331,6 +448,118 @@ def phrase_recall(test_roidb, pred_roidb, N_recall):
 	print(N_total)
 	return acc, num_right
 
+def rela_recall_r(test_roidb, pred_roidb, N_recall):
+	N_right = 0.0
+	N_total = 0.0
+	N_data = len(test_roidb)
+	num_right = np.zeros([N_data,])
+	for i in range(N_data):
+		rela_gt = test_roidb[i]['rela_gt']
+		if len(rela_gt) == 0:
+			continue
+		sub_gt = test_roidb[i]['sub_gt']
+		obj_gt = test_roidb[i]['obj_gt']
+		sub_box_gt = test_roidb[i]['sub_box_gt']
+		obj_box_gt = test_roidb[i]['obj_box_gt']
+
+		pred_rela = pred_roidb[i]['pred_rela']
+		pred_rela_score = pred_roidb[i]['pred_rela_score']
+		sub_dete = pred_roidb[i]['sub_dete']
+		obj_dete = pred_roidb[i]['obj_dete']
+		sub_box_dete = pred_roidb[i]['sub_box_dete']
+		obj_box_dete = pred_roidb[i]['obj_box_dete']
+
+		N_rela = len(rela_gt)
+		N_total = N_total + N_rela
+
+		N_pred = len(pred_rela)
+		sort_score = -np.sort(-np.reshape(pred_rela_score,[1,-1]))
+
+		if N_recall >= N_pred:
+			thresh = -1
+		else:
+			thresh = sort_score[0][N_recall]
+  
+        	detected_gt = np.zeros([N_rela,])
+        	detected_gt_1 = np.zeros([N_rela,])         
+        	for j in range(N_pred):
+			if pred_rela_score[j] <= thresh:
+                
+				continue
+			maxk = 0
+			positionk = -1			
+			for k in range(N_rela):
+				if detected_gt[k] == 1:
+					continue
+				if (sub_gt[k] == sub_dete[j]) and (obj_gt[k] == obj_dete[j]) and (rela_gt[k] == pred_rela[j]):
+					s_iou = compute_iou_each(sub_box_dete[j], sub_box_gt[k])
+					o_iou = compute_iou_each(obj_box_dete[j], obj_box_gt[k])
+    					iou = np.max([s_iou, o_iou])
+					if ( s_iou >= 0.5 ) and ( o_iou >=0.5 ) and iou > maxk:
+						maxk = iou
+						positionk = k
+      			if positionk > -1:
+                      		detected_gt[positionk] = 1
+		N_right = N_right + np.sum(detected_gt)
+
+
+	acc = N_right/N_total
+	return N_right, N_total
+def phrase_recall_r(test_roidb, pred_roidb, N_recall):
+    N_right = 0.0
+    N_total = 0.0
+    N_data = len(test_roidb)
+    num_right = np.zeros([N_data,]) 
+    for i in range(N_data):
+		rela_gt = test_roidb[i]['rela_gt']
+		if len(rela_gt) == 0:
+			continue
+
+		N_rela = len(rela_gt)
+		sub_gt = test_roidb[i]['sub_gt']
+		obj_gt = test_roidb[i]['obj_gt']
+		sub_box_gt = test_roidb[i]['sub_box_gt']
+		obj_box_gt = test_roidb[i]['obj_box_gt']
+		phrase_gt = generate_phrase_box(sub_box_gt, obj_box_gt)
+
+
+		pred_rela = pred_roidb[i]['pred_rela']
+		pred_rela_score = pred_roidb[i]['pred_rela_score']
+		sub_dete = pred_roidb[i]['sub_dete']
+		obj_dete = pred_roidb[i]['obj_dete']
+		sub_box_dete = pred_roidb[i]['sub_box_dete']
+		obj_box_dete = pred_roidb[i]['obj_box_dete']
+		phrase_dete = generate_phrase_box(sub_box_dete, obj_box_dete)
+		N_pred = len(pred_rela)
+
+		N_total = N_total + N_rela
+	
+		sort_score = -np.sort(-np.reshape(pred_rela_score,[1,-1]))
+		if N_recall >= N_pred:
+			thresh = -1
+		else:
+			thresh = sort_score[0][N_recall]
+		detected_gt = np.zeros([N_rela,])
+		for j in range(N_pred):
+			if pred_rela_score[j] <= thresh:
+				continue
+			maxk = 0
+			positionk = -1	
+			for k in range(N_rela):
+				if detected_gt[k] == 1:
+					continue
+				if (sub_gt[k] == sub_dete[j]) and (obj_gt[k] == obj_dete[j]) and (rela_gt[k] == pred_rela[j]):
+					iou = compute_iou_each(phrase_dete[j], phrase_gt[k])
+					if iou >= 0.5 and iou > maxk:
+						maxk = iou
+						positionk = k
+			if positionk > -1:
+				detected_gt[positionk] = 1
+		N_right = N_right + np.sum(detected_gt)
+
+    acc = N_right/N_total
+
+    return N_right, N_total
 def print_pred_res(test_roidb, pred_roidb, res_name, N_rela):
 	N_pred_rela = np.zeros([N_rela,])
 	N_right_rela = np.zeros([N_rela,])
