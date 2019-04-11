@@ -254,7 +254,7 @@ class MFURLN(object):
 					self.rela_label: blob['rela'],
 					self.sub_cls: blob['sub_gt'] ,
 					self.obj_cls: blob['obj_gt'] , 
-					self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
+					self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']],
 						self.sp_info: blob['sp_info'],
 						}
 
