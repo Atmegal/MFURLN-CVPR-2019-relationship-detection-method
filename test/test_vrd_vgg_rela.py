@@ -6,7 +6,7 @@ import numpy as np
 from model.config import cfg 
 from model.ass_fun import *
 from net.vrd_rela import MFURLN
-
+import gc
 N_cls = cfg.VRD_NUM_CLASS
 N_rela = cfg.VRD_NUM_RELA 
 N_each_batch = cfg.VRD_BATCH_NUM
@@ -19,12 +19,12 @@ vnet.create_graph(N_each_batch, index_sp, index_cls, N_cls, N_rela)
 
 roidb_path = './input/vrd_rela.npz'
 res_path =  './tf-faster-rcnn-master/lib/output/VRD/vgg16_faster_rcnn_iter_60000.ckpt'
-save_path = './result/vrd/rela/vrd_roid_rela.ckpt'
-test_path = './result/vrd/rela/vrd_roid_rela.npz'
+model_path = './result/vrd/rela/vrd_roid_rela.ckpt'
+save_path = './result/vrd/rela/vrd_roid_rela.npz'
 
 
 saver = tf.train.Saver(max_to_keep = 200)
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 roidb_read = read_roidb(roidb_path)
 test_roidb = roidb_read['test_roidb']
 N_test = len(test_roidb)
@@ -52,7 +52,7 @@ with tf.Session() as sess:
 			print(roidb_id + 1)
 			continue
 
-		pred_rela, pred_rela_score, pred_rela_all, sub_rela, obj_rela, sub_score, obj_score = vnet.test_rela(sess, roidb_use)
+		pred_rela, pred_rela_score, pred_rela_all = vnet.test_rela(sess, roidb_use)
 
 		sub_score = np.reshape( roidb_use['sub_score'], np.shape(pred_rela_score) )
 		obj_score = np.reshape( roidb_use['obj_score'], np.shape(pred_rela_score) )
@@ -62,10 +62,10 @@ with tf.Session() as sess:
 							'sub_box_dete': roidb_use['sub_box_dete'], 'obj_box_dete': roidb_use['obj_box_dete'],
 							'sub_dete': roidb_use['sub_dete']-1, 'obj_dete': roidb_use['obj_dete']-1}
 		pred_roidb.append(pred_roidb_temp)
-   		rela_R50, rela_num_right50 = rela_recall1([test_roidb[roidb_id]], [pred_roidb_temp], 50)
-   		rela_R100, rela_num_right100 = rela_recall1([test_roidb[roidb_id]], [pred_roidb_temp], 100)
-   		phrase_R50, rela_num_right50 = phrase_recall1([test_roidb[roidb_id]], [pred_roidb_temp], 50)
-   		phrase_R100, rela_num_right100 = phrase_recall1([test_roidb[roidb_id]], [pred_roidb_temp], 100)
+   		rela_R50, rela_num_right50 = rela_recall_r([test_roidb[roidb_id]], [pred_roidb_temp], 50)
+   		rela_R100, rela_num_right100 = rela_recall_r([test_roidb[roidb_id]], [pred_roidb_temp], 100)
+   		phrase_R50, rela_num_right50 = phrase_recall_r([test_roidb[roidb_id]], [pred_roidb_temp], 50)
+   		phrase_R100, rela_num_right100 = phrase_recall_r([test_roidb[roidb_id]], [pred_roidb_temp], 100)
    		rR50 = rR50 + rela_R50
    		rR100 = rR100 + rela_R100
    		pR50 = pR50 + phrase_R50
