@@ -19,22 +19,22 @@ index_cls = False
 vnet = MFURLN()
 vnet.create_graph(N_each_batch, index_sp, index_cls, N_cls, N_rela)
 
-roidb_path = './input/vrd_roidb_predicate.npz'
-#roidb_path = '/media/hp/189EA2629EA23860/work/visual_relation/vtranse/input/vrd_roidb_sig.npz'
+roidb_path = './input/vrd_roidb.npz'
+#roidb_path = '/media/hp/189EA2629EA23860/work/visual_relation/vtranse/input/vrd_roidb.npz'
 res_path =  './tf-faster-rcnn-master/lib/output/VRD/vgg16_faster_rcnn_iter_60000.ckpt'
 model_path = './result/vrd/predicate/vrd_roid_predicate.ckpt'
 test_path = './result/vrd/predicate/vrd_roid_predicate.npz'
 
 
 roidb_read = read_roidb(roidb_path)
-train_roidb = roidb_read['train_roidb']
+train_roidb = roidb_read['train_roidb'][:3500]
 roidb_path = './input/vrd_roidb.npz'
 roidb_read = read_roidb(roidb_path)
 validation_roidb = roidb_read['val_roidb']
 test_roidb = roidb_read['test_roidb']
 N_train = len(train_roidb)
 N_test = len(test_roidb)
-N_round = 40
+N_round = 13
 N_show = 500
 N_save = N_train
 N_val = len(validation_roidb)
@@ -147,9 +147,9 @@ with tf.Session(config = config) as sess:
 			roidb['pred_roidb'] = pred_roidb
 			np.savez(save_path, roidb=roidb)
 			print("test: acc: {0}".format( R50_test))
-		stop += 1
-		if stop > 2:
-			break		
+		#stop += 1
+		#if stop > 2:
+		#	break		
     		f1 = open('result_for_test.txt', "a")  
        		f1.write(str(r))
     		f1.write('\t')
