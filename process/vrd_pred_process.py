@@ -19,7 +19,7 @@ test_image_path = cfg.DIR + 'dataset/VRD/sg_dataset/sg_test_images/'
 image_path = [train_image_path, test_image_path]
 
 ###################################################save_path
-save_path ='./input/vrd_roidb_predicate.npz'
+save_path ='./input/vrd_roidb.npz'
 
 for r in range(2):
 	file_path_use = file_path[r]
@@ -74,25 +74,25 @@ for r in range(2):
 				sb_new[relation_id][0:4] = [sb[2],sb[0],sb[3],sb[1]]
 
 			roidb_temp['index_pred'] = generate_batch(len(rela), N_each_pred)
-                	#roidb_temp['sub_box_gt'] = sb_new
-                	#roidb_temp['obj_box_gt'] = ob_new
-                	#roidb_temp['sub_gt'] = subj
-                	#roidb_temp['obj_gt'] = obj
-                	#roidb_temp['rela_gt'] = rela#np.zeros([len(roidb_temp['sub_box_gt']), 70])
+                	roidb_temp['sub_box_gt'] = sb_new
+                	roidb_temp['obj_box_gt'] = ob_new
+                	roidb_temp['sub_gt'] = subj
+                	roidb_temp['obj_gt'] = obj
+                	roidb_temp['rela_gt'] = rela#np.zeros([len(roidb_temp['sub_box_gt']), 70])
 
-			boxes_1 = np.concatenate( (sb_new, ob_new), axis=1 )
-			unique_boxes_1, unique_inds_1 = np.unique(boxes_1, axis=0, return_index = True)
-                	roidb_temp['sub_box_gt'] = sb_new[unique_inds_1]
-                	roidb_temp['obj_box_gt'] = ob_new[unique_inds_1]
-                	roidb_temp['sub_gt'] = subj[unique_inds_1]
-                	roidb_temp['obj_gt'] = obj[unique_inds_1]
-                	roidb_temp['rela_gt'] = np.zeros([len(roidb_temp['sub_box_gt']), 71])
+			#boxes_1 = np.concatenate( (sb_new, ob_new), axis=1 )
+			#unique_boxes_1, unique_inds_1 = np.unique(boxes_1, axis=0, return_index = True)
+                	#roidb_temp['sub_box_gt'] = sb_new[unique_inds_1]
+                	#roidb_temp['obj_box_gt'] = ob_new[unique_inds_1]
+                	#roidb_temp['sub_gt'] = subj[unique_inds_1]
+                	#roidb_temp['obj_gt'] = obj[unique_inds_1]
+                	#roidb_temp['rela_gt'] = np.zeros([len(roidb_temp['sub_box_gt']), 71])
 
-			for i in range(len(roidb_temp['rela_gt'])):
-				for j in range(len(sb_new)):
-					if  np.sum(np.abs(roidb_temp['sub_box_gt'][i]-sb_new[j]) + np.abs(roidb_temp['obj_box_gt'][i]-ob_new[j]) ) == 0:
-						roidb_temp['rela_gt'][i,  np.int(rela[j])] = 1
-				roidb_temp['rela_gt'][i] = roidb_temp['rela_gt'][i]/np.sum(roidb_temp['rela_gt'][i])
+			#for i in range(len(roidb_temp['rela_gt'])):
+			#	for j in range(len(sb_new)):
+			#		if  np.sum(np.abs(roidb_temp['sub_box_gt'][i]-sb_new[j]) + np.abs(roidb_temp['obj_box_gt'][i]-ob_new[j]) ) == 0:
+			#			roidb_temp['rela_gt'][i,  np.int(rela[j])] = 1
+			#	roidb_temp['rela_gt'][i] = roidb_temp['rela_gt'][i]/np.sum(roidb_temp['rela_gt'][i])
 
 	
 			roidb.append(roidb_temp)
