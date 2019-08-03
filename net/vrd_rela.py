@@ -163,10 +163,10 @@ class MFURLN(object):
 	def build_rd_network(self):
 		v_fc = self.layers['v_fc7']
 		sub_fc = self.layers['sub_fc7']	
-     		ob_fc = self.layers['ob_fc7']
+		ob_fc = self.layers['ob_fc7']
 
 
- 		sp_info = self.sp_info
+		sp_info = self.sp_info
 
 		sub_fc = slim.fully_connected(sub_fc, cfg.VTR.VG_R, 
 										 activation_fn=tf.nn.relu, scope='RD_s1')			 
@@ -222,14 +222,16 @@ class MFURLN(object):
 		r1 = tf.nn.sigmoid(rela_score_full)
 
 
-		in_de_loss = - tf.reduce_sum( rela_label_1 * tf.log(tf.clip_by_value( tf.nn.sigmoid(rela_score_full_d), 1e-8, 1.0))) - tf.reduce_sum( ( rela_label_3) * tf.log(tf.clip_by_value(1 - tf.nn.sigmoid(rela_score_full_d), 1e-8, 1.0)))
+		in_de_loss = - tf.reduce_sum( rela_label_1 * tf.log(tf.clip_by_value(
+            tf.nn.sigmoid(rela_score_full_d), 1e-8, 1.0))) - tf.reduce_sum( ( rela_label_3) * tf.log(tf.clip_by_value(1 - tf.nn.sigmoid(rela_score_full_d), 1e-8, 1.0)))
 
-		rela_loss =  - tf.reduce_sum(  rela_label * tf.log(tf.clip_by_value(r1, 1e-8, 1.0))) - tf.reduce_sum( tf.reshape(tf.reduce_sum((1 - rela_label) * tf.log(tf.clip_by_value(1 - r1, 1e-8, 1.0)), 1), [-1, 1]) * rela_label_3) * 0.5
+		rela_loss =  - tf.reduce_sum(  rela_label *
+                                       tf.log(tf.clip_by_value(r1, 1e-8, 1.0))) - tf.reduce_sum( tf.reshape(tf.reduce_sum((1 - rela_label) * tf.log(tf.clip_by_value(1 - r1, 1e-8, 1.0)), 1), [-1, 1]) * rela_label_3) * 0.5
 
 
 		self.layers['rd_loss'] =  in_de_loss  + rela_loss
 
-		self.layers['rela_score_f'] = rela_score_full
+		self.layers['rela_score_f'] = rela_score_full#[:, :self.num_predicates]
 
 		self.layers['rela_score_is_pair'] = rela_score_full_d
 
@@ -285,12 +287,11 @@ class MFURLN(object):
 				self.sbox: blob['sub_box'], 
 				self.obox: blob['obj_box'], 
 				self.vbox: blob['vis_box'],
-					self.rela_label: blob['rela'],
-					self.sub_cls: blob['sub_gt'],
-					self.obj_cls: blob['obj_gt'],
-						self.sp_info: blob['sp_info'],
-						self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
-						}	
+				self.rela_label: blob['rela'],
+				self.sub_cls: blob['sub_gt'],
+				self.obj_cls: blob['obj_gt'],
+				self.sp_info: blob['sp_info'],
+				self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]}
 			_, losses = sess.run([RD_train,self.losses], feed_dict = feed_dict)
 			RD_loss += losses['rd_loss']
 			acc += losses['acc']
@@ -325,11 +326,10 @@ class MFURLN(object):
 				self.sbox: blob['sub_box'], 
 				self.obox: blob['obj_box'], 
 				self.vbox: blob['vis_box'],
-					self.sub_cls: blob['sub_gt'],
-					self.obj_cls: blob['obj_gt'],
-						self.sp_info: blob['sp_info'],
-						self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]
-						}
+				self.sub_cls: blob['sub_gt'],
+				self.obj_cls: blob['obj_gt'],
+				self.sp_info: blob['sp_info'],
+				self.sub_obj_p: self.sub_obj_pred[blob['sub_gt'], blob['obj_gt']]}
 
 			predictions = sess.run(self.predictions, feed_dict = feed_dict)
 
@@ -404,29 +404,29 @@ def dropout(x, keep_prob):
 def leaky_relu(x, alpha):
 	return tf.maximum(x, alpha * x)
 def conv_op(input_op,name,kh,kw,n_out,dh,dw,p):
-    n_in = input_op.get_shape()[-1].value
-    with tf.name_scope(name) as scope:
-        kernel = tf.get_variable(scope+"kernel",
-                                 shape=[kh,kw,n_in,n_out],
-                                 dtype=tf.float32,
-                                 initializer=tf.contrib.layers.xavier_initializer_conv2d())
-        conv = tf.nn.conv2d(input_op, kernel, (1,dh,dw,1),padding='SAME')
-        bias_init_val = tf.constant(0.0, shape=[n_out],dtype=tf.float32)
-        biases = tf.Variable(bias_init_val , trainable=True , name='bias')
-        z = tf.nn.bias_add(conv,biases)
-        activation = tf.nn.relu(z,name=scope)
-        return activation
+	n_in = input_op.get_shape()[-1].value
+	with tf.name_scope(name) as scope:
+		kernel = tf.get_variable(scope+"kernel",
+								 shape=[kh,kw,n_in,n_out],
+								 dtype=tf.float32,
+								 initializer=tf.contrib.layers.xavier_initializer_conv2d())
+		conv = tf.nn.conv2d(input_op, kernel, (1,dh,dw,1),padding='SAME')
+		bias_init_val = tf.constant(0.0, shape=[n_out],dtype=tf.float32)
+		biases = tf.Variable(bias_init_val , trainable=True , name='bias')
+		z = tf.nn.bias_add(conv,biases)
+		activation = tf.nn.relu(z,name=scope)
+		return activation
 
 def fc_op(input_op,name,n_out,p):
-    n_in = input_op.get_shape()[-1].value
-    with tf.name_scope(name) as scope:
-        kernel = tf.get_variable(scope+'kernel',
-                                 shape=[n_in,n_out],
-                                 dtype=tf.float32,
-                                 initializer=tf.contrib.layers.xavier_initializer_conv2d())
-        biases = tf.Variable(tf.constant(0.1,shape=[n_out],dtype=tf.float32),name='bias')
-        activation = tf.nn.relu_layer(input_op,kernel,biases,name=scope)
-        return activation
+	n_in = input_op.get_shape()[-1].value
+	with tf.name_scope(name) as scope:
+		kernel = tf.get_variable(scope+'kernel',
+								 shape=[n_in,n_out],
+								 dtype=tf.float32,
+								 initializer=tf.contrib.layers.xavier_initializer_conv2d())
+		biases = tf.Variable(tf.constant(0.1,shape=[n_out],dtype=tf.float32),name='bias')
+		activation = tf.nn.relu_layer(input_op,kernel,biases,name=scope)
+		return activation
 
 def mpool_op(input_op,name,kh,kw,dh,dw):
-    return tf.nn.max_pool(input_op,ksize=[1,kh,kw,1],strides=[1,dh,dw,1],padding='VALID',name=name)
+	return tf.nn.max_pool(input_op,ksize=[1,kh,kw,1],strides=[1,dh,dw,1],padding='VALID',name=name)

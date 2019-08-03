@@ -35,7 +35,7 @@ class MFURLN(object):
 ##################################################
 		self.sp_info = tf.placeholder(tf.float32, shape=[None, 8])
 		self.sub_obj_p = tf.placeholder(tf.float32, shape=[None, num_predicates])
-		self.rela_label = tf.placeholder(tf.float32, shape=[None,num_predicates])
+		self.rela_label = tf.placeholder(tf.int32, shape=[None,])
 
 ##############################################################
 
@@ -196,7 +196,7 @@ class MFURLN(object):
 		v_f3 =  slim.fully_connected( tf.concat([label_s, label_o, sub_obj_p], axis = 1), cfg.VTR.VG_R,
 										 activation_fn=tf.nn.relu, scope='RD_3v', reuse = False)
 
-		rela_label = self.rela_label#tf.one_hot( self.rela_label, self.num_predicates)
+		rela_label = tf.one_hot( self.rela_label, self.num_predicates)
 
 		full_fc1 = tf.concat([v_f1, v_f2, v_f3], 1)
 
@@ -216,7 +216,7 @@ class MFURLN(object):
 		regularizer = tf.contrib.layers.l2_regularizer(0.0001)
 		we = tf.trainable_variables()
 		RD_var = [var for var in we if 'RD' in var.name]
-		rela_label = self.rela_label#tf.one_hot( self.rela_label, self.num_predicates)
+		rela_label = tf.one_hot( self.rela_label, self.num_predicates)#self.rela_label#
 		rela_score = tf.nn.sigmoid(self.layers['rela_score_f']) 
 		sub_label =tf.one_hot(self.sub_cls, self.num_classes)
 		obj_label =tf.one_hot(self.obj_cls, self.num_classes)
