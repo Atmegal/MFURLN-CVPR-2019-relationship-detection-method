@@ -15,3 +15,5 @@ We are still missing some datasets and .ckpt files, since they are too huge to b
 We are still fixing some bugs.
 
 We will write a readme file for using this code.
+
+Please use Python2.7
