@@ -7,19 +7,20 @@ from model.config import cfg
 from model.ass_fun import *
 import json
 
+DIR = '/home/lyn/Datasets/'
 N_each_pred = cfg.VRD_BATCH_NUM
 #############################################json
-train_file_path = cfg.DIR + 'dataset/VRD/json_dataset/annotations_train.json'
-test_file_path = cfg.DIR + 'dataset/VRD/json_dataset/annotations_test.json'
+train_file_path = DIR + 'VRD/json_dataset/annotations_train.json'
+test_file_path = DIR + 'VRD/json_dataset/annotations_test.json'
 file_path = [train_file_path, test_file_path]
 
 ###################################################image_path
-train_image_path = cfg.DIR + 'dataset/VRD/sg_dataset/sg_train_images/'
-test_image_path = cfg.DIR + 'dataset/VRD/sg_dataset/sg_test_images/'
+train_image_path = DIR + 'VRD/sg_dataset/sg_train_images/'
+test_image_path = DIR + 'VRD/sg_dataset/sg_test_images/'
 image_path = [train_image_path, test_image_path]
 
 ###################################################save_path
-save_path ='./input/vrd_roidb.npz'
+save_path ='vrd_roidb1.npz'
 
 for r in range(2):
 	file_path_use = file_path[r]
@@ -38,7 +39,7 @@ for r in range(2):
 			image_full_path = image_path_use + image_name[image_id]
 			im = cv2.imread(image_full_path)
 			if type(im) == type(None):
-                   		print(image_id)
+				print(image_id)
 				continue
 			im_shape = np.shape(im)
 			im_h = im_shape[0]
@@ -74,33 +75,32 @@ for r in range(2):
 				sb_new[relation_id][0:4] = [sb[2],sb[0],sb[3],sb[1]]
 
 			roidb_temp['index_pred'] = generate_batch(len(rela), N_each_pred)
-                	roidb_temp['sub_box_gt'] = sb_new
-                	roidb_temp['obj_box_gt'] = ob_new
-                	roidb_temp['sub_gt'] = subj
-                	roidb_temp['obj_gt'] = obj
-                	roidb_temp['rela_gt'] = rela#np.zeros([len(roidb_temp['sub_box_gt']), 70])
+			roidb_temp['sub_box_gt'] = sb_new
+			roidb_temp['obj_box_gt'] = ob_new
+			roidb_temp['sub_gt'] = subj
+			roidb_temp['obj_gt'] = obj
+			roidb_temp['rela_gt'] = rela
 
-			#boxes_1 = np.concatenate( (sb_new, ob_new), axis=1 )
-			#unique_boxes_1, unique_inds_1 = np.unique(boxes_1, axis=0, return_index = True)
-                	#roidb_temp['sub_box_gt'] = sb_new[unique_inds_1]
-                	#roidb_temp['obj_box_gt'] = ob_new[unique_inds_1]
-                	#roidb_temp['sub_gt'] = subj[unique_inds_1]
-                	#roidb_temp['obj_gt'] = obj[unique_inds_1]
-                	#roidb_temp['rela_gt'] = np.zeros([len(roidb_temp['sub_box_gt']), 71])
+			# boxes_1 = np.concatenate( (sb_new, ob_new), axis=1 )
+			# unique_boxes_1, unique_inds_1 = np.unique(boxes_1, axis=0, return_index = True)
+			# roidb_temp['sub_box_gt'] = sb_new[unique_inds_1]
+			# roidb_temp['obj_box_gt'] = ob_new[unique_inds_1]
+			# roidb_temp['sub_gt'] = subj[unique_inds_1]
+			# roidb_temp['obj_gt'] = obj[unique_inds_1]
 
-			#for i in range(len(roidb_temp['rela_gt'])):
-			#	for j in range(len(sb_new)):
-			#		if  np.sum(np.abs(roidb_temp['sub_box_gt'][i]-sb_new[j]) + np.abs(roidb_temp['obj_box_gt'][i]-ob_new[j]) ) == 0:
-			#			roidb_temp['rela_gt'][i,  np.int(rela[j])] = 1
-			#	roidb_temp['rela_gt'][i] = roidb_temp['rela_gt'][i]/np.sum(roidb_temp['rela_gt'][i])
-
-	
+			# roidb_temp['rela_gt'] = np.zeros([len(roidb_temp['sub_box_gt']), 71])
+			# for i in range(len(roidb_temp['rela_gt'])):
+			# 	for j in range(len(sb_new)):
+			# 		if  np.sum(np.abs(roidb_temp['sub_box_gt'][i]-sb_new[j]) + np.abs(roidb_temp['obj_box_gt'][i]-ob_new[j]) ) == 0:
+			# 			roidb_temp['rela_gt'][i,  np.int(rela[j])] = 1
+			# 	roidb_temp['rela_gt'][i] = roidb_temp['rela_gt'][i]/np.sum(roidb_temp['rela_gt'][i])
 			roidb.append(roidb_temp)
-		if r == 0:	
-			train_roidb = roidb[:3500]
-			val_roidb = roidb[3500:]
-		elif r == 1:
-			test_roidb = roidb
+	if r == 0:
+		train_roidb = roidb[:3500]
+		val_roidb = roidb[3500:]
+	elif r == 1:
+		test_roidb = roidb
+
 roidb = {}
 print('Train:', len(train_roidb))
 roidb['train_roidb'] = train_roidb
@@ -108,6 +108,5 @@ print('Validation:', len(val_roidb))
 roidb['val_roidb'] = val_roidb
 print('Test:', len(test_roidb))
 roidb['test_roidb'] = test_roidb
-
 np.savez(save_path, roidb=roidb)
 

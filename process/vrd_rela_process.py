@@ -7,9 +7,9 @@ from model.ass_fun import *
 N_each_batch = cfg.VRD_BATCH_NUM_RELA
 N_each_pair = cfg.VRD_AU_PAIR
 iou_l = cfg.VRD_IOU_TRAIN
-roidb_path = './input/vrd_roidb.npz'
-detected_box_path = './tf-faster-rcnn-master/lib/vrd_detected_box.npz'
-save_path = './input/vrd_rela.npz'
+roidb_path = '/media/lyn/Data/MFURLN001/input/vrd_roidb.npz'
+detected_box_path = '/media/lyn/Data/MFURLN001/faster rcnn/lib/vrd_detected_box.npz'
+save_path = '/media/lyn/Data/MFURLN001/input/vrd_rela.npz'
 
 roidb_read = read_roidb(roidb_path)
 train_roidb = roidb_read['train_roidb']
